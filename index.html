@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Tracker - Driver App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white p-4 shadow-lg">
+        <h1 class="text-2xl font-bold text-center">
+            <i class="fas fa-bus mr-2"></i>Trip Tracker
+        </h1>
+        <p class="text-center text-blue-100 mt-1">FCM Transport Services Corp.</p>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container mx-auto px-4 py-6 max-w-md">
+        
+        <!-- Unit and Route Selection Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                <i class="fas fa-id-badge mr-2 text-blue-600"></i>Select Unit & Route
+            </h2>
+            <div class="mb-4">
+                <label for="unitSelect" class="block text-sm font-medium text-gray-700 mb-2">
+                    Choose your unit number:
+                </label>
+                <select id="unitSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">Select a unit...</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                    <option value="13">13</option>
+                    <option value="14">14</option>
+                    <option value="15">15</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="routeSelect" class="block text-sm font-medium text-gray-700 mb-2">
+                    Choose your route:
+                </label>
+                <select id="routeSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">Select a route...</option>
+                    <option value="Bauan → Lipa">Bauan → Lipa</option>
+                    <option value="Lipa → Bauan">Lipa → Bauan</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Passenger Counter Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                <i class="fas fa-bus mr-2 text-green-600"></i>Passenger Tracker
+            </h2>
+            
+            <!-- Route Display -->
+            <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                <div class="text-center">
+                    <span class="font-medium text-gray-600">Current Route:</span>
+                    <p class="text-gray-800 text-lg font-semibold" id="currentRoute">Select a route above</p>
+                </div>
+            </div>
+
+            <!-- Passenger Counter -->
+            <div class="bg-blue-50 rounded-lg p-6 mb-6 text-center">
+                <h3 class="text-lg font-semibold text-blue-800 mb-2">
+                    <i class="fas fa-users mr-2"></i>Passengers Picked Up
+                </h3>
+                <div class="text-6xl font-bold text-blue-600 mb-2" id="passengerCount">0</div>
+                <p class="text-sm text-blue-600">Total passengers</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <button id="pickupBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg transition duration-200 text-lg disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                <i class="fas fa-user-plus mr-2"></i>Pick Up Passenger
+            </button>
+            <button id="endTripBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-lg transition duration-200 text-lg mt-3 disabled:bg-gray-400 disabled:cursor-not-allowed hidden" disabled>
+                <i class="fas fa-stop mr-2"></i>End Trip
+            </button>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="statusMessages" class="space-y-3 mb-6"></div>
+
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-700">Processing...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        // Note: We load Firebase dynamically inside initFirebase() so the app UI
+        // still works even if Firebase fails to load. This avoids hard imports
+        // that can block the whole script from running.
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBLxAHdvRJO043XRSCCgYxA4RTKaPpyVL0",
+            authDomain: "bustriptracker-1c8f1.firebaseapp.com",
+            projectId: "bustriptracker-1c8f1",
+            storageBucket: "bustriptracker-1c8f1.firebasestorage.app",
+            messagingSenderId: "59506102653",
+            appId: "1:59506102653:web:dcf2529b810b627326bc14",
+            measurementId: "G-NEWK35GQMC",
+            databaseURL: "https://bustriptracker-1c8f1-default-rtdb.firebaseio.com"
+        };
+
+        // Global state management
+        let currentUnit = null;
+        let currentRoute = null;
+        let passengerCount = 0;
+        let database = null;
+        let firebaseConnected = false;
+        let pendingPickups = [];
+
+        // DOM elements
+        const unitSelect = document.getElementById('unitSelect');
+        const routeSelect = document.getElementById('routeSelect');
+        const pickupBtn = document.getElementById('pickupBtn');
+        const endTripBtn = document.getElementById('endTripBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const statusMessages = document.getElementById('statusMessages');
+        const currentRouteDisplay = document.getElementById('currentRoute');
+        const passengerCountDisplay = document.getElementById('passengerCount');
+
+        // Show status message
+        function showStatusMessage(message, type = 'info') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `p-4 rounded-lg shadow-md ${
+                type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
+                type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
+                type === 'warning' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                'bg-blue-100 text-blue-800 border border-blue-200'
+            }`;
+            
+            messageDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${
+                        type === 'success' ? 'fa-check-circle' :
+                        type === 'error' ? 'fa-exclamation-circle' :
+                        type === 'warning' ? 'fa-exclamation-triangle' :
+                        'fa-info-circle'
+                    } mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            statusMessages.insertBefore(messageDiv, statusMessages.firstChild);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 5000);
+        }
+
+        // Pending pickups queue (local persistence)
+        function loadPendingPickups() {
+            try {
+                const raw = localStorage.getItem('pendingPickups');
+                pendingPickups = raw ? JSON.parse(raw) : [];
+            } catch (_) {
+                pendingPickups = [];
+            }
+        }
+        function savePendingPickups() {
+            localStorage.setItem('pendingPickups', JSON.stringify(pendingPickups));
+        }
+        async function flushPendingPickups() {
+            if (!firebaseConnected || !database || pendingPickups.length === 0) return;
+            const toSend = [...pendingPickups];
+            for (const pickup of toSend) {
+                try {
+                    await saveToFirebase(pickup);
+                    pendingPickups.shift();
+                    savePendingPickups();
+                } catch (_) {
+                    // Stop on first failure; will retry later
+                    break;
+                }
+            }
+        }
+
+        // Handle route selection change
+        function updateControlsEnabled() {
+            const enabled = Boolean(currentUnit) && Boolean(currentRoute);
+            pickupBtn.disabled = !enabled;
+            endTripBtn.disabled = !enabled || passengerCount === 0;
+            pickupBtn.className = enabled
+                ? 'w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg transition duration-200 text-lg'
+                : 'w-full bg-gray-400 text-white font-bold py-4 px-4 rounded-lg transition duration-200 text-lg cursor-not-allowed';
+            endTripBtn.className = (enabled && passengerCount > 0)
+                ? 'w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-lg transition duration-200 text-lg mt-3'
+                : 'w-full bg-gray-400 text-white font-bold py-4 px-4 rounded-lg transition duration-200 text-lg mt-3 cursor-not-allowed';
+            // Show End Trip only when count >= 1
+            if (passengerCount > 0 && enabled) {
+                endTripBtn.classList.remove('hidden');
+            } else {
+                endTripBtn.classList.add('hidden');
+            }
+        }
+
+        function handleUnitChange() {
+            currentUnit = unitSelect.value;
+            if (currentUnit) {
+                showStatusMessage(`Unit selected: ${currentUnit}`, 'success');
+            }
+            updateControlsEnabled();
+        }
+
+        function handleRouteChange() {
+            currentRoute = routeSelect.value;
+            
+            console.log('Route changed to:', currentRoute);
+            
+            if (currentRoute) {
+                currentRouteDisplay.textContent = currentRoute;
+                showStatusMessage(`Route selected: ${currentRoute}`, 'success');
+            } else {
+                currentRouteDisplay.textContent = 'Select a route above';
+            }
+            updateControlsEnabled();
+        }
+
+        // Pick up a passenger
+        async function pickupPassenger() {
+            if (!currentRoute) {
+                showStatusMessage('Please select a route first', 'error');
+                return;
+            }
+            
+            console.log('Pickup button clicked');
+            
+            // Immediately increment passenger count for instant feedback
+            passengerCount += 1;
+            passengerCountDisplay.textContent = passengerCount;
+            updateControlsEnabled();
+            
+            // Save to localStorage immediately (always works)
+            localStorage.setItem('passengerCount', passengerCount.toString());
+            localStorage.setItem('currentRoute', currentRoute);
+            localStorage.setItem('currentUnit', currentUnit || '');
+            
+            // Show immediate success message
+            showStatusMessage(`Passenger #${passengerCount} picked up!`, 'success');
+
+            // Build initial payload (we will enrich with location if available)
+            const currentTime = new Date().toISOString();
+            const pickupData = {
+                type: 'pickup',
+                unit: currentUnit,
+                route: currentRoute,
+                time: currentTime,
+                location: null,
+                passengerNumber: passengerCount,
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            // Try to get location, but do not block sending
+            try {
+                const location = await getCurrentLocation();
+                pickupData.location = { lat: location.latitude, lng: location.longitude, accuracy: location.accuracy };
+                showStatusMessage(`Location recorded: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`, 'info');
+            } catch (error) {
+                console.error('Location error:', error);
+                showStatusMessage(`Location unavailable: ${error.message}`, 'warning');
+            }
+
+            // Send to local backend (MongoDB) and fallback to Firebase/local queue
+            try {
+                await fetch('/api/pickups', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pickupData)
+                });
+            } catch (e) {
+                // Queue locally first, then try to send to Firebase if available
+                pendingPickups.push(pickupData);
+                savePendingPickups();
+                try { await saveToFirebase(pickupData); pendingPickups.pop(); savePendingPickups(); } catch (_) {}
+            }
+        }
+
+        // Get current GPS location using HTML5 Geolocation API
+        function getCurrentLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation is not supported by this browser.'));
+                    return;
+                }
+                
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
+                };
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        });
+                    },
+                    (error) => {
+                        let errorMessage = 'Unable to get location. ';
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += 'Location access denied by user.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += 'Location information unavailable.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += 'Location request timed out.';
+                                break;
+                            default:
+                                errorMessage += 'Unknown location error.';
+                                break;
+                        }
+                        reject(new Error(errorMessage));
+                    },
+                    options
+                );
+            });
+        }
+
+        // Load passenger count from localStorage
+        function loadPassengerCount() {
+            const savedCount = localStorage.getItem('passengerCount');
+            const savedRoute = localStorage.getItem('currentRoute');
+            const savedUnit = localStorage.getItem('currentUnit');
+            
+            if (savedCount) {
+                passengerCount = parseInt(savedCount);
+                passengerCountDisplay.textContent = passengerCount;
+            }
+            
+            if (savedUnit) {
+                currentUnit = savedUnit;
+                if (unitSelect) unitSelect.value = savedUnit;
+            }
+            if (savedRoute) {
+                currentRoute = savedRoute;
+                if (routeSelect) routeSelect.value = savedRoute;
+                currentRouteDisplay.textContent = savedRoute;
+            }
+            updateControlsEnabled();
+        }
+
+        // Show loading overlay
+        function showLoading(show) {
+            if (show) {
+                loadingOverlay.classList.remove('hidden');
+            } else {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        // Initialize Firebase
+        async function initFirebase() {
+            try {
+                // Dynamically import Firebase ESM modules from CDN
+                const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js');
+                const { getDatabase, ref: dbRef, set: dbSet, push: dbPush } = await import('https://www.gstatic.com/firebasejs/10.12.1/firebase-database.js');
+
+                // Rebind helpers so the rest of the code can use them
+                window.__fb = { dbRef, dbSet, dbPush };
+
+                const app = initializeApp(firebaseConfig);
+                database = getDatabase(app);
+                firebaseConnected = true;
+                console.log('Firebase connected successfully');
+                showStatusMessage('Firebase connected - data will be saved to cloud', 'success');
+                return true;
+            } catch (error) {
+                console.error('Firebase initialization failed:', error);
+                firebaseConnected = false;
+                showStatusMessage('Firebase unavailable - data saved locally only', 'warning');
+                return false;
+            }
+        }
+
+        // Save data to Firebase with error handling
+        async function saveToFirebase(pickupData) {
+            if (!firebaseConnected || !database) {
+                throw new Error('Firebase not connected');
+            }
+            
+            try {
+                const { dbRef, dbSet, dbPush } = window.__fb || {};
+                const pickupsRef = dbRef(database, 'pickups');
+                const newPickupRef = dbPush(pickupsRef);
+                await dbSet(newPickupRef, pickupData);
+                console.log('Data saved to Firebase:', pickupData.passengerNumber);
+                return true;
+            } catch (error) {
+                console.error('Firebase save error:', error);
+                throw new Error('Firebase save failed');
+            }
+        }
+
+        // Initialize the application
+        async function init() {
+            console.log('Passenger Tracker App Initialized');
+            
+            // Event listeners
+            unitSelect.addEventListener('change', handleUnitChange);
+            routeSelect.addEventListener('change', handleRouteChange);
+            pickupBtn.addEventListener('click', pickupPassenger);
+            endTripBtn.addEventListener('click', endTrip);
+            
+            // Load existing passenger count from localStorage
+            loadPassengerCount();
+            
+            // Initialize Firebase (non-blocking)
+            loadPendingPickups();
+            await initFirebase();
+            // Try to flush anything saved locally while offline
+            flushPendingPickups();
+            
+            showStatusMessage('App loaded successfully!', 'success');
+        }
+
+        // End Trip handler
+        async function endTrip() {
+            if (!currentUnit || !currentRoute) {
+                showStatusMessage('Select unit and route first', 'error');
+                return;
+            }
+            if (passengerCount === 0) {
+                showStatusMessage('No passengers to end trip', 'warning');
+                return;
+            }
+            const endTime = new Date().toISOString();
+            const summary = {
+                unit: currentUnit,
+                route: currentRoute,
+                endTime,
+                totalPassengers: passengerCount
+            };
+            try {
+                // Try backend first
+                await fetch('/api/trips/end', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(summary)
+                });
+                // Also save to Firebase if connected (optional dual-write)
+                try { await saveToFirebase({ ...summary, type: 'tripEnd' }); } catch (_) {}
+                showStatusMessage('Trip ended and saved', 'success');
+                // Reset count and UI
+                passengerCount = 0;
+                passengerCountDisplay.textContent = '0';
+                localStorage.setItem('passengerCount', '0');
+                updateControlsEnabled();
+            } catch (e) {
+                // Fallback to Firebase/local
+                try { await saveToFirebase({ ...summary, type: 'tripEnd' }); } catch (_) {}
+                showStatusMessage('Trip end saved locally (backend unavailable)', 'warning');
+                passengerCount = 0;
+                passengerCountDisplay.textContent = '0';
+                localStorage.setItem('passengerCount', '0');
+                updateControlsEnabled();
+            }
+        }
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
+
+
