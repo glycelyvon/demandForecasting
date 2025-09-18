@@ -122,6 +122,11 @@
             databaseURL: "https://bustriptracker-1c8f1-default-rtdb.firebaseio.com"
         };
 
+        // Backend API base configuration
+        // Priority: localStorage.apiBase > window.API_BASE (from an inline script) > '' (relative)
+        const API_BASE = (typeof window !== 'undefined' && (localStorage.getItem('apiBase') || window.API_BASE)) || '';
+        const apiUrl = (path) => (API_BASE ? `${API_BASE}${path}` : path);
+
         // Global state management
         let currentUnit = null;
         let currentRoute = null;
@@ -286,7 +291,7 @@
 
             // Send to local backend (MongoDB) and fallback to Firebase/local queue
             try {
-                await fetch('/api/pickups', {
+                await fetch(apiUrl('/api/pickups'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(pickupData)
@@ -460,7 +465,7 @@
             };
             try {
                 // Try backend first
-                await fetch('/api/trips/end', {
+                await fetch(apiUrl('/api/trips/end'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(summary)
