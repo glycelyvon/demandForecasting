@@ -56,8 +56,8 @@ app.get('/api/pickups', async (req, res) => {
 app.post('/api/pickups', async (req, res) => {
   try {
     const payload = req.body || {};
-    // Basic validation (location is optional)
-    const required = ['unit', 'route', 'time', 'passengerNumber'];
+    // Basic validation
+    const required = ['unit', 'route', 'time', 'location', 'passengerNumber'];
     for (const key of required) {
       if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
         return res.status(400).json({ error: `Missing field: ${key}` });
@@ -69,18 +69,14 @@ app.post('/api/pickups', async (req, res) => {
       route: String(payload.route),
       time: new Date(payload.time).toISOString(),
       passengerNumber: Number(payload.passengerNumber),
-      date: payload.date || new Date().toISOString().split('T')[0],
-      createdAt: new Date(),
-    };
-    if (payload.location && payload.location.lat != null && payload.location.lng != null) {
-      doc.location = {
+      location: {
         lat: Number(payload.location.lat),
         lng: Number(payload.location.lng),
         accuracy: payload.location.accuracy != null ? Number(payload.location.accuracy) : undefined,
-      };
-    } else {
-      doc.location = null;
-    }
+      },
+      date: payload.date || new Date().toISOString().split('T')[0],
+      createdAt: new Date(),
+    };
     const result = await db.collection('pickups').insertOne(doc);
     res.json({ ok: true, id: result.insertedId });
   } catch (err) {
