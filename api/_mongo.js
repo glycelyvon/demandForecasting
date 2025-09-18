@@ -1,6 +1,6 @@
 // Shared MongoDB connection helper for Vercel serverless functions
 const { MongoClient } = require('mongodb');
-const uri = "mongodb+srv://glycelvirtucio_db_user:<db_password>@cluster0.zrqzom3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = "mongodb+srv://glycelvirtucio_db_user:capstonrdo the enonmen v@cluster0.zrqzom3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 let cached = global.__mongoCached;
 if (!cached) {
