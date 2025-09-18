@@ -49,7 +49,7 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
     console.error(e);
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error', message: e.message });
   }
 };
 
